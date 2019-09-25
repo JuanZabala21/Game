@@ -1,146 +1,337 @@
-# include <windows.h>
-# include <iostream>
-# include <conio.h>
+#include <stdio.h>
+#include <Windows.h>
+#include <conio.h>
+#include <stdlib.h>
+#include <list>
+#include <mmsystem.h>
+using namespace std;
 
+#define ARRIBA 72
 #define IZQUIERDA 75
-#define DERECHA   77 
+#define DERECHA 77
+#define ABAJO 80
 
-char avion_l1[]={' ',' ',' ', '*',' ',' ',' ',0};        
-char avion_l2[]={' ',' ','*', '*','*',' ',' ',0};
-char avion_l3[]={' ','*',' ', '*',' ','*',' ',0};
-
-char explocion_l1[]={' ',' ','*','*',' ',' ',' ',0};      
-char explocion_l2[]={' ','*','*','*','*',' ',' ',0};
-char explocion_l3[]={' ',' ','*','*',' ',' ',' ',0};
-
-char explocion_r1[]={'*',' ','*','*',' ','*',' ',0};       
-char explocion_r2[]={' ','*','*','*','*',' ',' ',0};
-char explocion_r3[]={'*',' ','*','*',' ','*',' ',0};
-
-char borrar_avion[]={' ',' ',' ',' ',' ',' ',' ',0};
-
-int Numero_vidas = 3;
-int Corazones = 3;
-int ix = 40; 
-int iy = 19;
-
-int y = 8 , x = 12; 
-int yy = 12 , xx = 17;
-int x1 = 58 , y1 = 6;
-int x2 = 70 , y2 = 9; 
-
-int i,v; 
-
-int repeticion = 0 , nivel = 1; 
-bool condicion = false; 
-
-void gotoxy(int x, int y){
-	HANDLE hCon; 
-	COORD dwPos; 
-	
-	dwPos.X = x;
-	dwPos.Y = y; 
-	
+/* Ojo falta documentar :O*/
+/* Ojo en propiedades - vinculador - entrada 
+   agregar winmm.lib para la musica
+*/
+void gotoxy(int x, int y)
+{
+	HANDLE hCon;
+	//Recupera el control de la consola
 	hCon = GetStdHandle(STD_OUTPUT_HANDLE);
-	SetConsoleCursorPosition(hCon,dwPos);
+	//Son coodenadas
+	COORD dwPos;
+	dwPos.X = x;
+	dwPos.Y = y;
+	SetConsoleCursorPosition(hCon, dwPos);
+}
+
+void ocultarCursor()
+{
+	HANDLE hCon;
+	//Recupera el control de la consola
+	hCon = GetStdHandle(STD_OUTPUT_HANDLE);
+	CONSOLE_CURSOR_INFO cci;
+	cci.dwSize = 50;
+	cci.bVisible = FALSE;
+	SetConsoleCursorInfo(hCon, &cci);
+}
+void pintarLimite()
+{
+	for (int i = 2; i < 78;i++)
+	{
+		gotoxy(i, 3); printf("%c", 205);
+		gotoxy(i, 33); printf("%c", 205);
+	}
+	for (int i = 4; i < 33; i++)
+	{
+		gotoxy(2, i); printf("%c", 186);
+		gotoxy(77, i); printf("%c", 186);
+	}
+	gotoxy(2, 3); printf("%c", 201);
+	gotoxy(2, 33); printf("%c", 200);
+	gotoxy(77, 3); printf("%c", 187);
+	gotoxy(77, 33); printf("%c", 188);
+}
+
+void disparo()
+{
+	sndPlaySound("snd_disparo.wav", SND_ASYNC);
+}
+void lose()
+{
+	sndPlaySound("snd_lose.wav", SND_ASYNC);
+}
+void explosion()
+{
+	sndPlaySound("explosion.wav", SND_ASYNC);
 	
 }
 
-void vidas(int vi){
-	gotoxy(2,1); printf("VIDAS %d",vi);
-	
-} 
+class NAVE
+{
+	int x, y;
+	int corazones;
+	int vidas;
+public:
+	NAVE();
+	NAVE(int _x, int _y, int _corazones, int _vidas);
+	void pintar();
+	void borrar();
+	void mover();
+	void pintarCorazones();
+	void perderVida();
+	void dismunirCorazon(){ corazones--; }
+	int X(){ return x; }
+	int Y(){ return y; }
+	int vidasJugador(){ return vidas; }
 
-void Barra_salud(int n){
-	gotoxy(72,1); printf("");
-	gotoxy(73,1); printf("");
-	gotoxy(74,1); printf("");
-	
-	for(v = 0 ; v < n; v++){
-		
-		gotoxy(72+v,1);
-		printf("%c",3);
+};
+NAVE::NAVE(int _x, int _y, int _corazones,int _vidas)
+{
+	x = _x;
+	y = _y;
+	corazones = _corazones;
+	vidas = _vidas;
+}
+void NAVE::pintar()
+{
+	gotoxy(x, y); printf("  %c", 30);
+	gotoxy(x, y + 1); printf(" %c%c%c", 40, 207, 41);
+	gotoxy(x, y + 2); printf("%c%c %c%c", 30, 190, 190, 30);
+
+}
+void NAVE::borrar()
+{
+	gotoxy(x, y);     printf("         ");
+	gotoxy(x, y + 1); printf("         ");
+	gotoxy(x, y + 2); printf("         ");
+}
+void NAVE::mover()
+{
+	if (_kbhit())
+	{
+		char tecla = _getch();
+		borrar();
+		if (tecla == IZQUIERDA && x > 3)
+		{
+			x--;
+		}
+		else if (tecla == DERECHA && x + 6 < 77)
+		{
+			x++;
+		}
+		else if (tecla == ARRIBA && y > 4 )
+		{
+			y--;
+		}
+		else if (tecla == ABAJO && y + 3 < 33  )
+		{
+			y++;
+		}
+		else if (tecla == 'e')
+		{
+			corazones--;
+		}
+		pintar();
+		pintarCorazones();
 	}
 }
-
-void Explocion(void){
-	gotoxy(ix,iy); puts(explocion_l1); 
-	gotoxy(ix,iy+1); puts(explocion_l2); 
-	gotoxy(ix,iy+2); puts(explocion_l3); 
-	
-	Sleep(380);
-	
-	gotoxy(ix,iy); puts(explocion_r1); 
-	gotoxy(ix,iy+1); puts(explocion_r2); 
-	gotoxy(ix,iy+2); puts(explocion_r3); 
-	
-	Sleep(380);
-	
-    gotoxy(ix,iy); puts(avion_l1); 
-	gotoxy(ix,iy+1); puts(avion_l2); 
-	gotoxy(ix,iy+2); puts(avion_l3); 
-}
-
-void Jugar(void){
-
-
-gotoxy(x,y); printf("c",2);
-gotoxy(xx,yy); printf("c",2);
-gotoxy(x1,y1); printf("c",2);
-gotoxy(x2,y2); printf("c",2);
-
-Sleep(70); 
-
-gotoxy(x,y); printf(" ");
-gotoxy(xx,yy); printf(" ");
-gotoxy(x1,y1); printf(" ");
-gotoxy(x2,y2); printf(" ");
-
-if (y > 20) 
+void NAVE::pintarCorazones()
 {
-	y = 4; 
-	x = (rand() % 70) +6; 
-	 
+	gotoxy(50, 2);
+	printf("Vida: %d",vidas);
+	gotoxy(64, 2);
+	printf("Salud:");
+	gotoxy(70, 2);
+	printf("      ");
+	for (int i = 0; i < corazones; i++)
+	{
+		gotoxy(70 + i, 2);
+		printf("%c", 3);
+	}
 }
-if(yy > 20) {
-	
-	yy = 4; 
-	xx = (rand() % 70) +6;
+void NAVE::perderVida()
+{
+	if (corazones == 0)
+	{
+		borrar();
+		gotoxy(x, y);     printf("   **   ");
+		gotoxy(x, y + 1); printf("  ****  ");
+		gotoxy(x, y + 2); printf("   **   ");
+		Sleep(200);
+		borrar();
+		gotoxy(x, y);     printf(" * ** *");
+		gotoxy(x, y + 1); printf("  **** ");
+		gotoxy(x, y + 2); printf(" * ** *");
+		Sleep(200);
+		borrar();
+		vidas--;
+		corazones = 3;
+		pintarCorazones();
+		pintar();
+		explosion();
+	}
+}
+class Asteroide
+{
+	int x, y;
+public:
+	Asteroide(int _x, int _y);
+	void pintar();
+	void mover();
+	void colisionNave(NAVE &nave);
+	int X(){ return x; }
+	int Y(){ return y; }
+};
+Asteroide::Asteroide(int _x, int _y)
+{
+	x = _x;
+	y = _y;
+}
+void Asteroide::pintar()
+{
+	gotoxy(x, y); printf("%c", 184);
+}
+void Asteroide::mover()
+{
+	gotoxy(x, y); printf(" ");
+	y++;
+	if (y > 32)
+	{
+		x = (rand() % 71) + 4;
+		y = 4;
+	}
+	pintar();
+}
+void Asteroide::colisionNave(NAVE &nave)
+{
+	if (x >= nave.X() && x < nave.X() + 6 && y >= nave.Y() && y <= nave.Y() + 2)
+	{
+		nave.dismunirCorazon();
+		nave.borrar();
+		nave.pintar();
+		nave.pintarCorazones();
+		x = (rand() % 71) + 4;
+		y = 4;
+	}
+}
+class Bala
+{
+	int x, y;
+public:
+	Bala(int _x, int _y);
+	void mover();
+	bool fuera();
+	int X(){ return x; }
+	int Y(){ return y; }
+};
+Bala::Bala(int _x, int _y)
+{
+	x = _x;
+	y = _y;
+}
+void Bala::mover()
+{
+	gotoxy(x, y); printf(" ");
+	y--;
+	gotoxy(x, y); printf("*");
 	
 }
-if(y1 > 20) {
-	
-	y1 = 4; 
-	x1 = (rand() % 70) +6;
-	
+bool Bala::fuera()
+{
+	if (y == 4) return true;
+	return false;
 }
-if(y2 > 20) {
+int main()
+{
+	ocultarCursor();
+	pintarLimite();
+	NAVE n(37,30,3,3);
+	n.pintar();
+	n.pintarCorazones();
+	list<Asteroide*> A;
+	list<Asteroide*>::iterator itA;
+	int puntos = 0;
+	for (int  i = 0; i < 5; i++)
+	{
+		A.push_back(new Asteroide(rand() % 75 + 3, rand() % 5 + 4));
+	}
+	list<Bala*> B;
+	list<Bala*>::iterator it;
+	bool gameOver = false;
 	
-	y2 = 4; 
-	x2 = (rand() % 70) +6;
+	while (!gameOver)
+	{	
+		
+		gotoxy(4, 2); printf("Puntos: %d", puntos);
+		if(_kbhit())
+		{
+			char tecla = _getch();
+			if (tecla == 'a' || tecla == 'A')
+			{
+				B.push_back(new Bala(n.X() + 2, n.Y() - 1));
+				disparo();
+			}
+		}
+		//Disparo
+		for (it = B.begin() ; it != B.end() ;)
+		{
+			(*it)->mover();
+			if ((*it)->fuera())
+			{
+				gotoxy((*it)->X(), (*it)->Y()); printf(" ");
+				delete(*it);
+				it = B.erase(it);
+			}
+			else
+			{
+				it++;
+			}
+		}
+		for (itA = A.begin(); itA != A.end(); itA++)
+		{
+			(*itA)->mover();
+			(*itA)->colisionNave(n);
+		}
+		//Colision Asteroide
+		for (itA = A.begin(); itA != A.end();itA++)
+		{
+			for (it = B.begin(); it != B.end();)
+			{
+				if ((*itA)->X() == (*it)->X() && ((*itA)->Y() + 1 == (*it)->Y() || (*itA)->Y() == (*it)->Y()))
+				{				
+					gotoxy((*it)->X(), (*it)->Y()); printf(" ");
+					delete(*it);
+					it = B.erase(it);				
+					A.push_back(new Asteroide(rand() % 75 + 3, 4));
+					gotoxy((*itA)->X(), (*itA)->Y()); printf(" ");
+					delete(*itA);
+					itA = A.erase(itA);
+					puntos += 5;
+				}
+				else
+				{
+					it++;
+				}
+			}
+		}
+		if (n.vidasJugador() <= 0)
+		{
+			gameOver = true;
+			lose();
+			gotoxy(25, 18);
+			printf("Game Over :(");
+		}
+		n.perderVida();
+		n.mover();
+		Sleep(30);
+	}
+	_getch();
 	
+	return 0;
 }
-
-y++; 
-yy++; 
-y1++;
-y2++;
-
-
-}
-
-
-
-int main(){
-	
-	vidas(3);
-	Barra_salud(3);
-	Jugar();
-	Explocion();
-	getch();
-	
-}
-
 
 
 
