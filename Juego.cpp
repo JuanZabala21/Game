@@ -11,10 +11,6 @@ using namespace std;
 #define DERECHA 77
 #define ABAJO 80
 
-/* Ojo falta documentar :O*/
-/* Ojo en propiedades - vinculador - entrada 
-   agregar winmm.lib para la musica
-*/
 void gotoxy(int x, int y)
 {
 	HANDLE hCon;
