@@ -5,7 +5,6 @@
 #include <list>
 #include <mmsystem.h>
 using namespace std;
-
 #define ARRIBA 72
 #define IZQUIERDA 75
 #define DERECHA 77
